@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 // import debounce from 'lodash.debounce';
 import './App.scss';
 import { peopleFromServer } from './data/people';
@@ -23,14 +23,10 @@ export const App: React.FC = () => {
   }));
 
   const [query, setQuery] = useState('');
-  const [appliedQuery, setAppliedQuery] = useState('');
 
-  const applyQuery = useCallback(
-       debounce((value: string) => {
-         setAppliedQuery(value);
-       }, 300),
-       [],
-     );
+  const applyQuery = debounce((value: string) => {
+    setQuery(value);
+  }, 300);
 
   const [currentPerson, setCurrentPerson] = useState<Person | null>(null);
   const [containerActive, setContainerActive] = useState(false);
@@ -42,16 +38,16 @@ export const App: React.FC = () => {
   };
 
   const filteredPeople = useMemo(() => {
-    const normalizedQuery = appliedQuery.trim().toLowerCase();
+    const normalizedQuery = query.trim().toLowerCase();
 
     if (normalizedQuery === '') {
-      return initialPeople;
+      return peopleFromServer;
     }
 
-    return initialPeople.filter(initperson =>
+    return peopleFromServer.filter(initperson =>
       initperson.name.toLowerCase().includes(normalizedQuery),
     );
-  }, [appliedQuery]);
+  }, [query]);
 
   return (
     <div className="container">
@@ -75,26 +71,24 @@ export const App: React.FC = () => {
           </div>
           <div className="dropdown-menu" role="menu" data-cy="suggestions-list">
             <div className="dropdown-content">
-              {(appliedQuery.trim() ? filteredPeople : initialPeople).map(
-                person => (
-                  <div
-                    className="dropdown-item"
-                    data-cy="suggestion-item"
-                    key={person.slug}
-                    onMouseDown={() => {
-                      setCurrentPerson(person);
-                      setContainerActive(false);
-                    }}
-                  >
-                    <p className="has-text-link">{person.name}</p>
-                  </div>
-                ),
-              )}
+              {(query.trim() ? filteredPeople : initialPeople).map(person => (
+                <div
+                  className="dropdown-item"
+                  data-cy="suggestion-item"
+                  key={person.slug}
+                  onMouseDown={() => {
+                    setCurrentPerson(person);
+                    setContainerActive(false);
+                  }}
+                >
+                  <p className="has-text-link">{person.name}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {filteredPeople.length === 0 && appliedQuery.trim() && (
+        {filteredPeople.length === 0 && query.trim() && (
           <div
             className="
               notification
