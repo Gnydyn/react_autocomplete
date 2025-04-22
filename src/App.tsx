@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 // import debounce from 'lodash.debounce';
 import './App.scss';
 import { peopleFromServer } from './data/people';
@@ -23,10 +23,12 @@ export const App: React.FC = () => {
   }));
 
   const [query, setQuery] = useState('');
+  const [appliedQuery, setAppliedQuery] = useState('');
 
-  const applyQuery = debounce((value: string) => {
-    setQuery(value);
-  }, 300);
+  const applyQuery = useCallback(debounce((value: string) => {
+    setAppliedQuery(value);
+  }, 300), []
+);
 
   const [currentPerson, setCurrentPerson] = useState<Person | null>(null);
   const [containerActive, setContainerActive] = useState(false);
@@ -38,7 +40,7 @@ export const App: React.FC = () => {
   };
 
   const filteredPeople = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+    const normalizedQuery = appliedQuery.trim().toLowerCase();
 
     if (normalizedQuery === '') {
       return peopleFromServer;
