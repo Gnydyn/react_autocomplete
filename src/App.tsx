@@ -1,49 +1,66 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import debounce from 'lodash.debounce';
+// import debounce from 'lodash.debounce';
 import './App.scss';
 import { peopleFromServer } from './data/people';
 import { Person } from './types/Person';
+import debounce from 'lodash.debounce';
+
+// function debounce(callback: Function, delay: number) {
+//   let timerId = 0;
+
+//   return (...args: any) => {
+//     window.clearTimeout(timerId);
+
+//     timerId = window.setTimeout(() => {
+//       callback(...args);
+//     }, delay);
+//   };
+// }
 
 export const App: React.FC = () => {
-  const initialPerson: Person[] = peopleFromServer.map(person => ({
+  const initialPeople: Person[] = peopleFromServer.map(person => ({
     ...person,
   }));
-
-  const [isInputFocus, setInputFocus] = useState(false);
-  const [person, setPerson] = useState<Person | null>(null);
 
   const [query, setQuery] = useState('');
   const [appliedQuery, setAppliedQuery] = useState('');
 
-  const applyQuery = useCallback(debounce(setAppliedQuery, 300), []);
+  const applyQuery = useCallback(
+       debounce((value: string) => {
+         setAppliedQuery(value);
+       }, 300),
+       [],
+     );
+
+  const [currentPerson, setCurrentPerson] = useState<Person | null>(null);
+  const [containerActive, setContainerActive] = useState(false);
 
   const handleQueryChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(event.target.value);
     applyQuery(event.target.value);
+    setCurrentPerson(null);
   };
-
-  const onSelected = (selectedPerson: Person) => {
-    setInputFocus(false);
-    setPerson(selectedPerson);
-    setQuery(selectedPerson.name);
-  };
-
-  const normalizedQuery = appliedQuery.toLowerCase();
 
   const filteredPeople = useMemo(() => {
-    return initialPerson.filter(initperson =>
+    const normalizedQuery = appliedQuery.trim().toLowerCase();
+
+    if (normalizedQuery === '') {
+      return initialPeople;
+    }
+
+    return initialPeople.filter(initperson =>
       initperson.name.toLowerCase().includes(normalizedQuery),
     );
-  }, [normalizedQuery]);
+  }, [appliedQuery]);
 
   return (
     <div className="container">
       <main className="section is-flex is-flex-direction-column">
         <h1 className="title" data-cy="title">
-          {`${person ? `${person?.name} (${person?.born} - ${person?.died})` : 'No selected person'}`}
+          {`${currentPerson ? `${currentPerson?.name} (${currentPerson?.born} - ${currentPerson?.died})` : 'No selected person'}`}
         </h1>
 
-        <div className={`dropdown ${isInputFocus ? 'is-active' : ''}`}>
+        <div className={`dropdown ${containerActive ? 'is-active' : ''}`}>
           <div className="dropdown-trigger">
             <input
               type="text"
@@ -51,23 +68,25 @@ export const App: React.FC = () => {
               placeholder="Enter a part of the name"
               className="input"
               data-cy="search-input"
-              onFocus={() => {
-                setInputFocus(true);
-              }}
+              onFocus={() => setContainerActive(true)}
+              onBlur={() => setContainerActive(false)}
               onChange={handleQueryChange}
             />
           </div>
           <div className="dropdown-menu" role="menu" data-cy="suggestions-list">
             <div className="dropdown-content">
-              {(appliedQuery.trim() ? filteredPeople : initialPerson).map(
-                pers => (
+              {(appliedQuery.trim() ? filteredPeople : initialPeople).map(
+                person => (
                   <div
                     className="dropdown-item"
                     data-cy="suggestion-item"
-                    key={pers.slug}
-                    onClick={() => onSelected(pers)}
+                    key={person.slug}
+                    onMouseDown={() => {
+                      setCurrentPerson(person);
+                      setContainerActive(false);
+                    }}
                   >
-                    <p className="has-text-link">{pers.name}</p>
+                    <p className="has-text-link">{person.name}</p>
                   </div>
                 ),
               )}
